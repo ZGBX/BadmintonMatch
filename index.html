@@ -9,7 +9,7 @@
     <!-- Chart.js for score line chart -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- 主逻辑 -->
-    <script src="index.js"></script>
+    <script src="index.obf.js"></script>
     <style>
         body { background: #f4f4f9; font-family: Arial, sans-serif; }
         .container { max-width: 900px; margin: 40px auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 12px #0002; padding: 30px; }
@@ -22,7 +22,6 @@
         .collapse-arrow { font-size: 18px; margin-left: 10px; }
         .btn { border-radius: 5px; padding: 6px 16px; margin: 0 4px; font-weight: bold; border: none; transition: background 0.2s; }
         .btn-score { background: #36a2eb; color: #fff; }
-        .btn-score:hover { background: #1e88e5; }
         .btn-clear { background: #ff6384; color: #fff; }
         .btn-clear:hover { background: #e53935; }
         .btn-reset { background: #ffb347; color: #fff; }
@@ -50,6 +49,21 @@
         .match-table tr:nth-child(even), .signup-table tr:nth-child(even) { background: #f9f9f9; }
         .match-table tr:hover, .signup-table tr:hover { background: #e3f2fd; }
         .signup-table th, .signup-table td { font-size: 15px; }
+        .loading-spinner {
+          display: inline-block;
+          width: 16px;
+          height: 16px;
+          border: 2px solid #36a2eb;
+          border-top: 2px solid #fff;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+          vertical-align: middle;
+          margin-right: 6px;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
         @media (max-width: 600px) {
             .container { padding: 8px; }
             .main-title { font-size: 1.3em; }
@@ -60,5 +74,8 @@
 </head>
 <body>
     <!-- 页面内容由index.js动态渲染 -->
+    <div style="height:640px;min-width:600px;width:100%;display:flex;align-items:center;justify-content:center;">
+        <canvas id="scoreChart" height="600" width="600" style="min-height:600px;min-width:600px;"></canvas>
+    </div>
 </body>
 </html>
