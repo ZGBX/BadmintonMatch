@@ -1,341 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
+    <title>比赛管理系统</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>比赛管理</title>
+    <!-- Bmob SDK -->
+    <script src="Bmob-2.5.30.min.js"></script>
+    <!-- Chart.js for score line chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 主逻辑 -->
+    <script src="index.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 0;
-            background-color: #f4f4f9;
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        label, button {
-            display: block;
-            margin-top: 10px;
-        }
-        label {
-            font-weight: bold;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #5cb85c;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #4cae4c;
-        }
-        table {
-            width: 100%;
-            margin-top: 20px;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .score-container {
-            margin-top: 20px;
+        body { background: #f4f4f9; font-family: Arial, sans-serif; }
+        .container { max-width: 900px; margin: 40px auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 12px #0002; padding: 30px; }
+        .main-title { text-align: center; color: #36a2eb; font-size: 2.2em; margin-bottom: 20px; }
+        .top-bar { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; font-size: 16px; }
+        .card { border-radius: 10px; box-shadow: 0 2px 8px #0002; margin-bottom: 30px; background: #fff; }
+        .card-header { background: linear-gradient(90deg,#36a2eb 60%,#ff6384 100%); color: #fff; padding: 12px 20px; font-size: 18px; cursor: pointer; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center; }
+        .card-content { padding: 20px; }
+        .collapsible .card-content { display: block; }
+        .collapse-arrow { font-size: 18px; margin-left: 10px; }
+        .btn { border-radius: 5px; padding: 6px 16px; margin: 0 4px; font-weight: bold; border: none; transition: background 0.2s; }
+        .btn-score { background: #36a2eb; color: #fff; }
+        .btn-score:hover { background: #1e88e5; }
+        .btn-clear { background: #ff6384; color: #fff; }
+        .btn-clear:hover { background: #e53935; }
+        .btn-reset { background: #ffb347; color: #fff; }
+        .btn-reset:hover { background: #ff9800; }
+        .btn-login { background: #4caf50; color: #fff; }
+        .btn-login:hover { background: #388e3c; }
+        .btn-logout { background: #888; color: #fff; }
+        .btn-logout:hover { background: #555; }
+        .btn-check { background: #5bc0de; color: #fff; }
+        .btn-check:hover { background: #0288d1; }
+        .live-card { background: linear-gradient(90deg,#e0f7fa 60%,#fff3e0 100%); padding: 20px 20px 30px 20px; }
+        .live-row { font-size: 22px; font-weight: bold; }
+        .live-score { font-size: 28px; color: #36a2eb; }
+        .live-team { color: #ff6384; }
+        .status-live { color: #36a2eb; font-weight: bold; }
+        .status-finished { color: #ff6384; font-weight: bold; }
+        .section-title { color: #36a2eb; font-size: 1.3em; margin-bottom: 10px; }
+        .input-login, .input-signup { border: 1px solid #36a2eb; border-radius: 5px; padding: 8px; margin-bottom: 10px; width: 100%; font-size: 16px; }
+        .select-match { border: 1px solid #ffb347; border-radius: 5px; padding: 8px; margin-bottom: 10px; font-size: 16px; width: 60%; }
+        .score-ops { margin: 18px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+        .score-label { font-weight: bold; color: #36a2eb; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background: #f2f2f2; }
+        .match-table tr:nth-child(even), .signup-table tr:nth-child(even) { background: #f9f9f9; }
+        .match-table tr:hover, .signup-table tr:hover { background: #e3f2fd; }
+        .signup-table th, .signup-table td { font-size: 15px; }
+        @media (max-width: 600px) {
+            .container { padding: 8px; }
+            .main-title { font-size: 1.3em; }
+            .score-ops { flex-direction: column; gap: 6px; }
+            .select-match { width: 100%; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>比赛管理</h1>
-        <label for="matchSelect">选择当前比赛的选手组合：</label>
-        <select id="matchSelect" onchange="selectMatch()">
-            <option value="">请选择选手组合</option>
-            <!-- 动态生成的选项 -->
-        </select>
-        <table id="matchTable">
-            <thead>
-                <tr>
-                    <th>A组</th>
-                    <th>B组</th>
-                    <th>项目</th>
-                    <th>A组得分</th>
-                    <th>B组得分</th>
-                    <th>最终结果</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- 动态生成的比赛信息 -->
-            </tbody>
-        </table>
-        <div class="score-container" id="scoreContainer" style="display: none;">
-            <div style="display: flex; gap: 20px; align-items: center; justify-content: center;">
-                <span style="font-weight:bold;">A组：</span>
-                <button onclick="addScoreA()">A组加分</button>
-                <button onclick="subtractScoreA()">A组减分</button>
-                <span style="font-weight:bold; margin-left:30px;">B组：</span>
-                <button onclick="addScoreB()">B组加分</button>
-                <button onclick="subtractScoreB()">B组减分</button>
-                <button onclick="resetScore()" style="background:#d9534f;margin-left:30px;">清零</button>
-            </div>
-        </div>
-        <hr style="margin:30px 0;">
-        <div class="card" style="margin-bottom:30px;">
-            <h2 style="color:#337ab7;">所有比赛名单与积分</h2>
-            <table id="allMatchTable">
-                <thead>
-                    <tr>
-                        <th>序号</th>
-                        <th>A组</th>
-                        <th>B组</th>
-                        <th>项目</th>
-                        <th>比分</th>
-                        <th>胜负</th>
-                        <th>积分</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- 动态生成 -->
-                </tbody>
-            </table>
-        </div>
-        <div class="card" style="margin-bottom:30px;">
-            <h2 style="color:#5bc0de;">今日报名名单检测</h2>
-            <label for="signupInput">输入今日报名人员（用逗号或空格分隔）：</label>
-            <input type="text" id="signupInput" placeholder="如：李健, 李京燕, 江红梅..." style="width:80%;padding:8px;">
-            <button onclick="checkSignup()" style="margin-left:10px;">检测可组队情况</button>
-            <div id="signupResult" style="margin-top:20px;"></div>
-        </div>
-    </div>
-    <script>
-        // 默认数据
-        const defaultMatches = [
-            { teamA: ['江红梅', '周卫贤'], teamB: ['李健', '李京燕'], project: '混双', completed: false, scoreA: 0, scoreB: 0 },
-            { teamA: ['杨高峰', '周卫贤'], teamB: ['李婷', '于春飞'], project: '女双', completed: false, scoreA: 0, scoreB: 0 },
-            { teamA: ['江红梅', '仇稳钧'], teamB: ['汪俊江', '杨美宸'], project: '男双', completed: false, scoreA: 0, scoreB: 0 },
-            { teamA: ['仇稳钧', '高名'], teamB: ['田浩岳', '李京燕'], project: '混双', completed: false, scoreA: 0, scoreB: 0 },
-            { teamA: ['王海军', '高名'], teamB: ['孙佳亮', '杨美宸'], project: '男双', completed: false, scoreA: 0, scoreB: 0 },
-            { teamA: ['王海军', '王家沛'], teamB: ['孙佳亮', '赵东晓'], project: '男双', completed: false, scoreA: 0, scoreB: 0 },
-            { teamA: ['王家沛', '李冠良'], teamB: ['王超英', '张志英'], project: '混双', completed: false, scoreA: 0, scoreB: 0 },
-            { teamA: ['张宝全', '李冠良'], teamB: ['田浩岳', '张志英'], project: '混双', completed: false, scoreA: 0, scoreB: 0 },
-            { teamA: ['张宝全', '何晓铭'], teamB: ['王超英', '于春飞'], project: '混双', completed: true, scoreA: 16, scoreB: 31 },
-            { teamA: ['何晓铭', '曾荣丽'], teamB: ['汪俊江', '赵东晓'], project: '男双', completed: false, scoreA: 0, scoreB: 0 },
-            { teamA: ['杨高峰', '曾荣丽'], teamB: ['李健', '李婷'], project: '混双', completed: false, scoreA: 0, scoreB: 0 }
-        ];
-        // 加载本地数据或用默认
-        function loadMatches() {
-            const data = localStorage.getItem('matches');
-            if (data) {
-                return JSON.parse(data);
-            }
-            return defaultMatches;
-        }
-        // 保存到本地
-        function saveMatches() {
-            localStorage.setItem('matches', JSON.stringify(matches));
-        }
-        // 初始化
-        let matches = loadMatches();
-        // 初始化时自动判断已完成比赛
-        matches.forEach(match => {
-            if (match.scoreA === 31 || match.scoreB === 31) {
-                match.completed = true;
-            }
-        });
-
-        function populateSelect() {
-            const select = document.getElementById('matchSelect');
-            select.innerHTML = '<option value="">请选择选手组合</option>';
-            matches.forEach(match => {
-                if (!match.completed) {
-                    const option = document.createElement('option');
-                    option.value = `${match.teamA.join(', ')} vs ${match.teamB.join(', ')}`;
-                    option.textContent = `${match.teamA.join(' 和 ')} - ${match.project} vs ${match.teamB.join(' 和 ')}`;
-                    select.appendChild(option);
-                }
-            });
-        }
-
-        function selectMatch() {
-            const select = document.getElementById('matchSelect');
-            const selectedValue = select.value;
-            const match = matches.find(m => `${m.teamA.join(', ')} vs ${m.teamB.join(', ')}` === selectedValue);
-
-            const tableBody = document.getElementById('matchTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = '';
-            if (match) {
-                const row = tableBody.insertRow();
-                row.insertCell(0).innerText = match.teamA.join(' 和 ');
-                row.insertCell(1).innerText = match.teamB.join(' 和 ');
-                row.insertCell(2).innerText = match.project;
-                const cellA = row.insertCell(3);
-                cellA.innerText = match.scoreA + ' / 31';
-                cellA.className = 'scoreA';
-                const cellB = row.insertCell(4);
-                cellB.innerText = match.scoreB + ' / 31';
-                cellB.className = 'scoreB';
-                // 最终结果
-                let result = '';
-                if (match.completed) {
-                    if (match.scoreA === 31) {
-                        result = 'A组胜';
-                    } else if (match.scoreB === 31) {
-                        result = 'B组胜';
-                    }
-                } else {
-                    result = '未完成';
-                }
-                row.insertCell(5).innerText = result;
-                document.getElementById('scoreContainer').style.display = 'block';
-            } else {
-                document.getElementById('scoreContainer').style.display = 'none';
-            }
-        }
-
-        function startScoring() {
-            document.getElementById('scoreContainer').style.display = 'block';
-        }
-
-        function getCurrentMatch() {
-            const select = document.getElementById('matchSelect');
-            const selectedValue = select.value;
-            return matches.find(m => `${m.teamA.join(', ')} vs ${m.teamB.join(', ')}` === selectedValue);
-        }
-
-        function updateTableScore() {
-            const match = getCurrentMatch();
-            if (!match) return;
-            const scoreCellA = document.querySelector('.scoreA');
-            const scoreCellB = document.querySelector('.scoreB');
-            if (scoreCellA) scoreCellA.innerText = match.scoreA;
-            if (scoreCellB) scoreCellB.innerText = match.scoreB;
-            // 判断是否完成，只有一方达到31分才算完成
-            if ((match.scoreA === 31 || match.scoreB === 31)) {
-                match.completed = true;
-            } else {
-                match.completed = false;
-            }
-            renderAllMatchTable();
-            saveMatches();
-        }
-
-        function addScoreA() {
-            const match = getCurrentMatch();
-            if (!match) return;
-            if (match.scoreA < 31 && match.scoreB < 31) match.scoreA += 1;
-            updateTableScore();
-            saveMatches();
-        }
-
-        function subtractScoreA() {
-            const match = getCurrentMatch();
-            if (!match) return;
-            if (match.scoreA > 0) match.scoreA -= 1;
-            updateTableScore();
-            saveMatches();
-        }
-
-        function addScoreB() {
-            const match = getCurrentMatch();
-            if (!match) return;
-            if (match.scoreB < 31 && match.scoreA < 31) match.scoreB += 1;
-            updateTableScore();
-            saveMatches();
-        }
-
-        function subtractScoreB() {
-            const match = getCurrentMatch();
-            if (!match) return;
-            if (match.scoreB > 0) match.scoreB -= 1;
-            updateTableScore();
-            saveMatches();
-        }
-
-        function resetScore() {
-            const match = getCurrentMatch();
-            if (!match) return;
-            match.scoreA = 0;
-            match.scoreB = 0;
-            updateTableScore();
-            saveMatches();
-        }
-
-        function renderAllMatchTable() {
-            const tbody = document.getElementById('allMatchTable').getElementsByTagName('tbody')[0];
-            tbody.innerHTML = '';
-            matches.forEach((match, idx) => {
-                const row = tbody.insertRow();
-                row.insertCell(0).innerText = idx + 1;
-                row.insertCell(1).innerText = match.teamA.join(' 和 ');
-                row.insertCell(2).innerText = match.teamB.join(' 和 ');
-                row.insertCell(3).innerText = match.project;
-                row.insertCell(4).innerText = `${match.scoreA} : ${match.scoreB} / 31`;
-                // 胜负判断
-                let result = '';
-                let point = '';
-                if (match.completed) {
-                    if (match.scoreA === 31) {
-                        result = 'A组胜';
-                        point = `A组: 3分<br>B组: 1分`;
-                    } else if (match.scoreB === 31) {
-                        result = 'B组胜';
-                        point = `A组: 1分<br>B组: 3分`;
-                    }
-                } else {
-                    result = '未完成';
-                    point = '-';
-                }
-                row.insertCell(5).innerHTML = result;
-                row.insertCell(6).innerHTML = point;
-            });
-        }
-
-        // 检查今日报名名单
-        function checkSignup() {
-            const input = document.getElementById('signupInput').value;
-            const signupList = input.split(/[，,\s]+/).map(s => s.trim()).filter(Boolean);
-            const resultDiv = document.getElementById('signupResult');
-            let html = '<table style="width:100%;border-collapse:collapse;">';
-            html += '<tr><th>序号</th><th>A组</th><th>B组</th><th>项目</th><th>能否进行</th><th>缺少人员</th></tr>';
-            let showIdx = 1;
-            matches.forEach((match, idx) => {
-                if (match.completed) return; // 已完成比赛不检测
-                let missing = [];
-                match.teamA.concat(match.teamB).forEach(name => {
-                    if (!signupList.includes(name)) missing.push(name);
-                });
-                let canPlay = missing.length === 0;
-                html += `<tr style="background:${canPlay ? '#eaffea' : '#ffeaea'};">`;
-                html += `<td>${showIdx++}</td>`;
-                html += `<td>${match.teamA.join(' 和 ')}</td>`;
-                html += `<td>${match.teamB.join(' 和 ')}</td>`;
-                html += `<td>${match.project}</td>`;
-                html += `<td style="color:${canPlay ? '#3c763d' : '#d9534f'};font-weight:bold;">${canPlay ? '可进行' : '不可进行'}</td>`;
-                html += `<td style="color:#d9534f;">${canPlay ? '-' : missing.join('、')}</td>`;
-                html += '</tr>';
-            });
-            html += '</table>';
-            resultDiv.innerHTML = html;
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            populateSelect();
-            renderAllMatchTable();
-        });
-    </script>
+    <!-- 页面内容由index.js动态渲染 -->
 </body>
 </html>
